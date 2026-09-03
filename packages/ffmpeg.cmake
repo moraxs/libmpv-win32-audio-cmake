@@ -174,6 +174,16 @@ ExternalProject_Add(ffmpeg
 
         --enable-filter=overlay
         --enable-filter=equalizer
+        --enable-filter=bass
+        --enable-filter=treble
+        --enable-filter=stereowiden
+        --enable-filter=crossfeed
+        --enable-filter=dynaudnorm
+        --enable-filter=acompressor
+        --enable-filter=alimiter
+        --enable-filter=aecho
+        --enable-filter=acrusher
+        --enable-filter=vibrato
 
         --enable-protocol=async
         --enable-protocol=cache
