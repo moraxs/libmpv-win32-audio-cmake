@@ -98,8 +98,10 @@ jobs:
 
       - name: Install Meson
         run: |
-          pacman -S --noconfirm meson || pip install --break-system-packages 'meson>=1.3.0'
-          meson --version
+          pacman -Sy --noconfirm python-pip || true
+          pip install --break-system-packages --upgrade 'meson>=1.3.0'
+          hash -r
+          which meson && meson --version
 
       - name: Configuring CMake & Downloading source
         run: |
