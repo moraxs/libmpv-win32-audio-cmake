@@ -11,6 +11,10 @@ on:
         required: false
         type: string
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   build_llvm:
     name: Building LLVM and Clang
