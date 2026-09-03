@@ -97,7 +97,9 @@ jobs:
         run: ${{ github.event.inputs.command }}
 
       - name: Install Meson
-        run: pip install --break-system-packages 'meson>=1.3.0'
+        run: |
+          pacman -S --noconfirm meson || pip install --break-system-packages 'meson>=1.3.0'
+          meson --version
 
       - name: Configuring CMake & Downloading source
         run: |
