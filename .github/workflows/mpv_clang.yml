@@ -198,12 +198,9 @@ jobs:
           PREFIX: ${{ secrets.CACHE_VERSION }}
         run: |
           cache_key=${CACHE_ID##*-}
-          curl -u shinchiro:$GH_TOKEN $CURL_RETRIES -s -o /dev/null -X DELETE -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/actions/caches?key=$PREFIX-clang_root-$cache_key
-          curl -u shinchiro:$GH_TOKEN $CURL_RETRIES -s -o /dev/null -X DELETE -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/actions/caches?key=$PREFIX-repository-$cache_key
-          curl -u shinchiro:$GH_TOKEN $CURL_RETRIES -s -o /dev/null -X DELETE -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/actions/caches?key=$PREFIX-clang-i686_toolchain-$cache_key
-          curl -u shinchiro:$GH_TOKEN $CURL_RETRIES -s -o /dev/null -X DELETE -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/actions/caches?key=$PREFIX-clang-x86_64_toolchain-$cache_key
-          curl -u shinchiro:$GH_TOKEN $CURL_RETRIES -s -o /dev/null -X DELETE -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/actions/caches?key=$PREFIX-clang-x86_64_v3_toolchain-$cache_key
-          curl -u shinchiro:$GH_TOKEN $CURL_RETRIES -s -o /dev/null -X DELETE -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/actions/caches?key=$PREFIX-clang-aarch64_toolchain-$cache_key
+          for name in clang_root repository clang-i686_toolchain clang-x86_64_toolchain clang-x86_64_v3_toolchain clang-aarch64_toolchain; do
+            curl $CURL_RETRIES -s -o /dev/null -X DELETE -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/$GITHUB_REPOSITORY/actions/caches?key=$PREFIX-$name-$cache_key
+          done
 
   release:
     name: Upload releases
