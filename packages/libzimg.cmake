@@ -15,7 +15,11 @@ ExternalProject_Add(libzimg
         --host=${TARGET_ARCH}
         --prefix=${MINGW_INSTALL_PREFIX}
         --disable-shared
-    BUILD_COMMAND ${MAKE}
+    # git reset --hard restores graphengine as an empty gitlink directory without
+    # invalidating the configure stamp, so re-link it before make instead of relying
+    # on the configure step having run.
+    BUILD_COMMAND bash -c "rm -rf <SOURCE_DIR>/graphengine && ln -s ${src_graphengine} <SOURCE_DIR>/graphengine"
+            COMMAND ${MAKE}
     INSTALL_COMMAND ${MAKE} install
             COMMAND bash -c "git -C ${src_graphengine} clean -dfx"
     BUILD_IN_SOURCE 1
