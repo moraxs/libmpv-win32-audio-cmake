@@ -117,6 +117,7 @@ PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_
         COMMAND bash -c "git am --abort 2> /dev/null || true"
         COMMAND bash -c "git fetch --filter=tree:0 --no-recurse-submodules || true"
         COMMAND ${stamp_dir}/reset_head.sh
+        COMMAND bash -c "git sparse-checkout reapply 2>/dev/null || true"
     )
     ExternalProject_Add_StepTargets(${_name} force-update)
 
