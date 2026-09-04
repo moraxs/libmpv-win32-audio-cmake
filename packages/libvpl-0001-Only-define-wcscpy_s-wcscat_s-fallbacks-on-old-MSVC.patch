@@ -1,0 +1,49 @@
+From 0fce8d114fcd14364a0b31b6d7e1e10b9fabf41c Mon Sep 17 00:00:00 2001
+From: moraxs <moraxs.top@gmail.com>
+Date: Fri, 4 Sep 2026 22:06:35 +0800
+Subject: [PATCH] Only define the wcscpy_s/wcscat_s fallbacks on old MSVC
+
+mfx_dispatcher_defs.h guards its wcscpy_s/wcscat_s compatibility macros
+with "#if _MSC_VER < 1400". On compilers that do not define _MSC_VER at
+all, such as clang and gcc targeting mingw-w64, an undefined identifier
+evaluates to 0 in a preprocessor conditional, so 0 < 1400 holds and the
+macros are defined unconditionally.
+
+They expand to a statement sequence rather than an expression:
+
+    #define wcscpy_s(to, to_size, from) \
+        (void)(to_size);                \
+        wcscpy(to, from)
+
+so any later use of wcscpy_s in an expression fails to compile. mingw-w64
+does exactly that in stralign.h, which <windows.h> pulls in:
+
+    return (wcscpy_s((PWSTR)Destination,DestinationSize,(PCWSTR)Source)==0
+            ? Destination : NULL);
+
+giving "expected ')'", "cannot initialize return object of type 'PUWSTR'
+with an rvalue of type 'void'" and "extraneous ')' before ';'" in every
+translation unit that includes mfx_dispatcher_defs.h before <windows.h>.
+
+Check that _MSC_VER is actually defined before comparing it. mingw-w64
+provides real wcscpy_s and wcscat_s, so no fallback is needed there.
+---
+ libvpl/src/windows/mfx_dispatcher_defs.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/libvpl/src/windows/mfx_dispatcher_defs.h b/libvpl/src/windows/mfx_dispatcher_defs.h
+index 38fd221..a23f1ce 100644
+--- a/libvpl/src/windows/mfx_dispatcher_defs.h
++++ b/libvpl/src/windows/mfx_dispatcher_defs.h
+@@ -17,7 +17,7 @@
+ #define MAX_PLUGIN_PATH 4096
+ #define MAX_PLUGIN_NAME 4096
+ 
+-#if _MSC_VER < 1400
++#if defined(_MSC_VER) && _MSC_VER < 1400
+     #define wcscpy_s(to, to_size, from) \
+         (void)(to_size);                \
+         wcscpy(to, from)
+-- 
+2.52.0.windows.1
+
