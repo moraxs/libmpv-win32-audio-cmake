@@ -27,7 +27,7 @@ ExternalProject_Add(llvm-compiler-rt-builtin
         -DCMAKE_FIND_ROOT_PATH=${MINGW_INSTALL_PREFIX}
         -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
         -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY
-        -DCMAKE_C_FLAGS='-I${CMAKE_INSTALL_PREFIX}/lib/clang/${clang_version}/include'
+        -DCMAKE_C_FLAGS=-I${CMAKE_INSTALL_PREFIX}/lib/clang/${clang_version}/include
         -DSANITIZER_CXX_ABI=libc++
     BUILD_COMMAND ${EXEC} LTO=0 ninja -C <BINARY_DIR>
     INSTALL_COMMAND ${EXEC} LTO=0 ninja -C <BINARY_DIR> install
@@ -44,6 +44,6 @@ ExternalProject_Add_Step(llvm-compiler-rt-builtin force-patch
     DEPENDEES patch
     DEPENDERS configure
     ALWAYS 1
-    COMMAND bash -c "cd <SOURCE_DIR> && git checkout -- compiler-rt/lib/builtins/CMakeLists.txt compiler-rt/lib/builtins/gcc_personality_v0.c 2>/dev/null || true; patch -p1 -N -i \"${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch\""
+    COMMAND bash -c "cd <SOURCE_DIR> && (git checkout -- compiler-rt/lib/builtins/CMakeLists.txt compiler-rt/lib/builtins/gcc_personality_v0.c 2>/dev/null || true) && patch -p1 -N -i \"${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch\""
     LOG 1
 )
