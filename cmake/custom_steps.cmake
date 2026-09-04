@@ -14,20 +14,34 @@ function(cleanup _name _last_step)
         set(git_tag "@{u}")
     endif()
 
-    # postremovebuild wipes the configure output out of the source tree of a
-    # build-in-source package once it is installed, but leaves the stamp files
-    # alone. That is fine while configure, build and install are all stamped: the
-    # package is done and nothing re-runs. It breaks once the build stamp is gone
-    # while the configure stamp survives -- a previous build failed, or the shared
-    # src_packages cache was saved by another arch's job after that job had already
-    # cleaned the tree. The build step then runs make in a tree with no Makefile
-    # ("No targets specified and no makefile found") and stays stuck there forever,
-    # since nothing ever invalidates the configure stamp again. Drop the configure
-    # stamp so configure re-runs and regenerates what build needs.
-    if(_build_in_source AND EXISTS ${stamp_dir}/${_name}-configure
-                        AND NOT EXISTS ${stamp_dir}/${_name}-build)
+    # A configure stamp with no build stamp means a previous run configured the
+    # package but never finished building it, usually because ninja stopped early
+    # on someone else's failure. That state does not survive to the next run: both
+    # postremovebuild variants destroy the configure output once the package is
+    # installed (git clean -dfx in the source tree, or deleting the whole binary
+    # dir), and force-update's git reset --hard rewrites every source file's mtime,
+    # which makes anything the previous configure generated look stale. So the
+    # build step runs against output that is either missing or older than its
+    # inputs:
+    #
+    #   make: *** No targets specified and no makefile found.  Stop.
+    #   make: *** [Makefile:6186: configdata.pm] Error 1
+    #
+    # and it stays stuck there, because a failed build never writes a build stamp
+    # and nothing else ever invalidates the configure stamp. Drop the configure
+    # stamp so configure re-runs first. This cannot cause a spurious rebuild: with
+    # no build stamp the build step was going to run regardless.
+    if(EXISTS ${stamp_dir}/${_name}-configure AND NOT EXISTS ${stamp_dir}/${_name}-build)
         message(STATUS "${_name}: configure stamp without build stamp, forcing reconfigure")
         file(REMOVE ${stamp_dir}/${_name}-configure)
+        # meson setup refuses to run against an already-configured build directory.
+        # force_meson_configure() clears this for most meson packages, but not all
+        # of them use it, so clear it here too. No-op for everything else.
+        get_property(binary_dir TARGET ${_name} PROPERTY _EP_BINARY_DIR)
+        file(GLOB meson_state ${binary_dir}/meson-*)
+        if(meson_state)
+            file(REMOVE_RECURSE ${meson_state})
+        endif()
     endif()
 
     if(_git_repository)
