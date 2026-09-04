@@ -36,10 +36,16 @@ ExternalProject_Add(llvm-compiler-rt-builtin
 
 cleanup(llvm-compiler-rt-builtin install)
 
-# The llvm target shares this SOURCE_DIR and cleanup(llvm install) runs
-# `git restore .` after llvm install, which reverts this patch. Force the
-# compiler-rt builtins patch to be re-applied before every configure so the
-# gcc_personality_v0 source is always included.
+# Nothing in the llvm-clang graph builds the llvm target itself (the clang
+# binaries may already be installed in CMAKE_INSTALL_PREFIX via the wrappers),
+# so make sure the shared LLVM sources are downloaded before they are used.
+# llvm-download clones on demand and is a no-op when the source is present.
+add_dependencies(llvm-compiler-rt-builtin llvm-download)
+
+# The llvm target shares this SOURCE_DIR and its cleanup steps run
+# `git restore .`/`git reset --hard` after llvm install, which reverts this
+# patch. Force the compiler-rt builtins patch to be re-applied before every
+# configure so the gcc_personality_v0 source is always included.
 ExternalProject_Add_Step(llvm-compiler-rt-builtin force-patch
     DEPENDEES patch
     DEPENDERS configure

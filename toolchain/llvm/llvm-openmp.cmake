@@ -24,3 +24,7 @@ ExternalProject_Add(llvm-openmp
     LOG_DOWNLOAD 1 LOG_UPDATE 1 LOG_CONFIGURE 1 LOG_BUILD 1 LOG_INSTALL 1
 )
 cleanup(llvm-openmp install)
+
+# Standalone LLVM_SRC consumer outside the llvm-clang graph: make sure the
+# shared LLVM sources are downloaded before they are used.
+add_dependencies(llvm-openmp llvm-download)
