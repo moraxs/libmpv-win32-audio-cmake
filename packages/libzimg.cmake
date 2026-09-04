@@ -1,4 +1,13 @@
 get_property(src_graphengine TARGET graphengine PROPERTY _EP_SOURCE_DIR)
+
+# Neither of these survives on its own into the step that needs them. git reset
+# --hard restores graphengine as an empty gitlink directory, and it also reverts
+# the PATCH_COMMAND sed below, because that edit is not a commit the way the git am
+# patches used elsewhere are. Both happen without invalidating the patch or
+# configure stamps, so redo them in every step that runs make. The sed is
+# idempotent and only matters on ARM, where cpuinfo_arm.cpp is compiled.
+set(libzimg_relink bash -c "rm -rf <SOURCE_DIR>/graphengine && ln -s ${src_graphengine} <SOURCE_DIR>/graphengine && sed -i 's/Windows.h/windows.h/g' <SOURCE_DIR>/src/zimg/common/arm/cpuinfo_arm.cpp")
+
 ExternalProject_Add(libzimg
     DEPENDS
         graphengine
@@ -15,15 +24,10 @@ ExternalProject_Add(libzimg
         --host=${TARGET_ARCH}
         --prefix=${MINGW_INSTALL_PREFIX}
         --disable-shared
-    # Neither of these survives to the build step on its own. git reset --hard
-    # restores graphengine as an empty gitlink directory, and it also reverts the
-    # PATCH_COMMAND sed above, because that edit is not a commit the way the git am
-    # patches used elsewhere are. Both happen without invalidating the patch or
-    # configure stamps, so redo them here where make will actually see them. The sed
-    # is idempotent and only matters on ARM, where cpuinfo_arm.cpp is compiled.
-    BUILD_COMMAND bash -c "rm -rf <SOURCE_DIR>/graphengine && ln -s ${src_graphengine} <SOURCE_DIR>/graphengine && sed -i 's/Windows.h/windows.h/g' <SOURCE_DIR>/src/zimg/common/arm/cpuinfo_arm.cpp"
+    BUILD_COMMAND ${libzimg_relink}
             COMMAND ${MAKE}
-    INSTALL_COMMAND ${MAKE} install
+    INSTALL_COMMAND ${libzimg_relink}
+            COMMAND ${MAKE} install
             COMMAND bash -c "git -C ${src_graphengine} clean -dfx"
     BUILD_IN_SOURCE 1
     LOG_DOWNLOAD 1 LOG_UPDATE 1 LOG_CONFIGURE 1 LOG_BUILD 1 LOG_INSTALL 1

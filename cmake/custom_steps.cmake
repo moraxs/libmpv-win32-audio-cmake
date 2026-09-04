@@ -14,33 +14,39 @@ function(cleanup _name _last_step)
         set(git_tag "@{u}")
     endif()
 
-    # A configure stamp with no build stamp means a previous run configured the
-    # package but never finished building it, usually because ninja stopped early
-    # on someone else's failure. That state does not survive to the next run: both
-    # postremovebuild variants destroy the configure output once the package is
-    # installed (git clean -dfx in the source tree, or deleting the whole binary
-    # dir), and force-update's git reset --hard rewrites every source file's mtime,
-    # which makes anything the previous configure generated look stale. So the
-    # build step runs against output that is either missing or older than its
-    # inputs:
+    # A package's stamps are only self-consistent at the extremes. All present means
+    # it finished, and postremovebuild has since destroyed its configure and build
+    # output on purpose -- git clean -dfx in the source tree for a build-in-source
+    # package, or deleting the whole binary dir otherwise -- which is harmless
+    # precisely because nothing re-runs. None present means it rebuilds from
+    # scratch. A partial set is what ninja leaves behind when it stops early on
+    # some other package's failure, and it is a trap: the next run resumes from
+    # whichever step is missing a stamp, against output that was either wiped or
+    # made stale by force-update's git reset --hard rewriting every source mtime.
     #
     #   make: *** No targets specified and no makefile found.  Stop.
     #   make: *** [Makefile:6186: configdata.pm] Error 1
+    #   ninja: error: rebuilding 'build.ninja': subcommand failed
     #
-    # and it stays stuck there, because a failed build never writes a build stamp
-    # and nothing else ever invalidates the configure stamp. Drop the configure
-    # stamp so configure re-runs first. This cannot cause a spurious rebuild: with
-    # no build stamp the build step was going to run regardless.
-    if(EXISTS ${stamp_dir}/${_name}-configure AND NOT EXISTS ${stamp_dir}/${_name}-build)
-        message(STATUS "${_name}: configure stamp without build stamp, forcing reconfigure")
-        file(REMOVE ${stamp_dir}/${_name}-configure)
-        # meson setup refuses to run against an already-configured build directory.
-        # force_meson_configure() clears this for most meson packages, but not all
-        # of them use it, so clear it here too. No-op for everything else.
-        get_property(binary_dir TARGET ${_name} PROPERTY _EP_BINARY_DIR)
-        file(GLOB meson_state ${binary_dir}/meson-*)
-        if(meson_state)
-            file(REMOVE_RECURSE ${meson_state})
+    # It then stays stuck, because a step that fails never writes the stamp that
+    # would break the cycle. If the package did not reach its last step, drop the
+    # configure and build stamps so it restarts from configure. This cannot cause a
+    # spurious rebuild: without the final stamp the remaining steps were going to
+    # run anyway, and the intermediate steps re-run on their own once the build
+    # stamp they depend on is newer.
+    if(NOT EXISTS ${stamp_dir}/${_name}-${_last_step})
+        if(EXISTS ${stamp_dir}/${_name}-configure OR EXISTS ${stamp_dir}/${_name}-build)
+            message(STATUS "${_name}: did not reach ${_last_step}, forcing reconfigure")
+            file(REMOVE ${stamp_dir}/${_name}-configure ${stamp_dir}/${_name}-build)
+            # meson setup refuses to run against an already-configured build
+            # directory. force_meson_configure() clears this for most meson
+            # packages, but not all of them use it, so clear it here too. No-op for
+            # everything else.
+            get_property(binary_dir TARGET ${_name} PROPERTY _EP_BINARY_DIR)
+            file(GLOB meson_state ${binary_dir}/meson-*)
+            if(meson_state)
+                file(REMOVE_RECURSE ${meson_state})
+            endif()
         endif()
     endif()
 
