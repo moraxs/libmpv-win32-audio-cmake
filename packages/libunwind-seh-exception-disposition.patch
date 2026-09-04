@@ -1,0 +1,59 @@
+From 0991d7b8fd01546aaf537a6238227100570f8236 Mon Sep 17 00:00:00 2001
+From: Martin Storsjo <martin@martin.st>
+Date:   Wed Feb 11 22:31:09 2026 +0000
+Subject: [PATCH] [libunwind] Fix building with EXCEPTION_DISPOSITION as
+ enum (#180513)
+
+Backport to the release/20.x branch (upstream fix landed on main only),
+adapted to the release/20.x line numbers.
+
+mingw-w64 (since 2025-12) defines EXCEPTION_DISPOSITION as an enum and
+removed the ExceptionExecuteHandler define (mingw-w64 2de6703961c0),
+which makes libunwind's "return 4" ill-formed C++ and breaks the
+Unwind-seh.cpp build:
+
+    error: cannot initialize return object of type 'EXCEPTION_DISPOSITION'
+    (aka '_EXCEPTION_DISPOSITION') with an rvalue of type 'int'
+
+Fix by adding explicit casts between EXCEPTION_DISPOSITION and int.
+
+diff --git a/libunwind/src/Unwind-seh.cpp b/libunwind/src/Unwind-seh.cpp
+index b2bb119..de22731 100644
+--- a/libunwind/src/Unwind-seh.cpp
++++ b/libunwind/src/Unwind-seh.cpp
+@@ -137,7 +137,7 @@ _GCC_specific_handler(PEXCEPTION_RECORD ms_exc, PVOID frame, PCONTEXT ms_ctx,
+     // If we were called by __libunwind_seh_personality(), indicate that
+     // a handler was found; otherwise, initiate phase 2 by unwinding.
+     if (ours && ms_exc->NumberParameters > 1)
+-      return 4 /* ExceptionExecuteHandler in mingw */;
++      return static_cast<EXCEPTION_DISPOSITION>(4);
+     // This should never happen in phase 2.
+     if (IS_UNWINDING(ms_exc->ExceptionFlags))
+       _LIBUNWIND_ABORT("Personality indicated exception handler in phase 2!");
+@@ -155,7 +155,7 @@ _GCC_specific_handler(PEXCEPTION_RECORD ms_exc, PVOID frame, PCONTEXT ms_ctx,
+     // a handler was found; otherwise, it's time to initiate a collided
+     // unwind to the target.
+     if (ours && !IS_UNWINDING(ms_exc->ExceptionFlags) && ms_exc->NumberParameters > 1)
+-      return 4 /* ExceptionExecuteHandler in mingw */;
++      return static_cast<EXCEPTION_DISPOSITION>(4);
+     // This should never happen in phase 1.
+     if (!IS_UNWINDING(ms_exc->ExceptionFlags))
+       _LIBUNWIND_ABORT("Personality installed context during phase 1!");
+@@ -217,13 +217,12 @@ __libunwind_seh_personality(int version, _Unwind_Action state,
+                              (void *)disp_ctx->LanguageHandler, (void *)&ms_exc,
+                              (void *)disp_ctx->EstablisherFrame,
+                              (void *)disp_ctx->ContextRecord, (void *)disp_ctx);
+-  EXCEPTION_DISPOSITION ms_act = disp_ctx->LanguageHandler(&ms_exc,
+-                                                           (PVOID)disp_ctx->EstablisherFrame,
+-                                                           disp_ctx->ContextRecord,
+-                                                           disp_ctx);
++  int ms_act = static_cast<int>(
++      disp_ctx->LanguageHandler(&ms_exc, (PVOID)disp_ctx->EstablisherFrame,
++                                disp_ctx->ContextRecord, disp_ctx));
+   _LIBUNWIND_TRACE_UNWINDING("__libunwind_seh_personality() LanguageHandler "
+                              "returned %d",
+-                             (int)ms_act);
++                             ms_act);
+   switch (ms_act) {
+   case ExceptionContinueExecution: return _URC_END_OF_STACK;
+   case ExceptionContinueSearch: return _URC_CONTINUE_UNWIND;

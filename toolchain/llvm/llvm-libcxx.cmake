@@ -44,3 +44,16 @@ ExternalProject_Add(llvm-libcxx
 )
 
 cleanup(llvm-libcxx install)
+
+# mingw-w64 (since 2025-12) defines EXCEPTION_DISPOSITION as an enum and
+# removed the ExceptionExecuteHandler define, which breaks libunwind's SEH
+# code as shipped on the release/20.x branch. Force the backport of the
+# upstream fix (llvm-project 0991d7b8fd01, #180513) to be re-applied before
+# every configure; llvm's cleanup steps may revert it in the shared tree.
+ExternalProject_Add_Step(llvm-libcxx force-patch
+    DEPENDEES patch
+    DEPENDERS configure
+    ALWAYS 1
+    COMMAND bash -c "cd <SOURCE_DIR> && (git checkout -- libunwind/src/Unwind-seh.cpp 2>/dev/null || true) && patch -p1 -N -i ${CMAKE_SOURCE_DIR}/packages/libunwind-seh-exception-disposition.patch"
+    LOG 1
+)
