@@ -44,6 +44,6 @@ ExternalProject_Add_Step(llvm-compiler-rt-builtin force-patch
     DEPENDEES patch
     DEPENDERS configure
     ALWAYS 1
-    COMMAND bash -c "cd <SOURCE_DIR> && (git checkout -- compiler-rt/lib/builtins/CMakeLists.txt compiler-rt/lib/builtins/gcc_personality_v0.c 2>/dev/null || true) && patch -p1 -N -i \"${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch\""
+    COMMAND bash -c "cd <SOURCE_DIR> && (git checkout -- compiler-rt/lib/builtins/CMakeLists.txt compiler-rt/lib/builtins/gcc_personality_v0.c 2>/dev/null || true) && patch -p1 -N -i ${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch"
     LOG 1
 )
