@@ -5,7 +5,6 @@ ExternalProject_Add(llvm-compiler-rt-builtin
     DOWNLOAD_COMMAND ""
     UPDATE_COMMAND ""
     SOURCE_DIR ${LLVM_SRC}
-    PATCH_COMMAND patch -p1 -N -i "${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch"
     LIST_SEPARATOR ,
     CONFIGURE_COMMAND ${EXEC} CONF=1 cmake -H<SOURCE_DIR>/compiler-rt/lib/builtins -B<BINARY_DIR>
         -G Ninja
@@ -36,3 +35,15 @@ ExternalProject_Add(llvm-compiler-rt-builtin
 )
 
 cleanup(llvm-compiler-rt-builtin install)
+
+# The llvm target shares this SOURCE_DIR and cleanup(llvm install) runs
+# `git restore .` after llvm install, which reverts this patch. Force the
+# compiler-rt builtins patch to be re-applied before every configure so the
+# gcc_personality_v0 source is always included.
+ExternalProject_Add_Step(llvm-compiler-rt-builtin force-patch
+    DEPENDEES patch
+    DEPENDERS configure
+    ALWAYS 1
+    COMMAND bash -c "cd <SOURCE_DIR> && git checkout -- compiler-rt/lib/builtins/CMakeLists.txt compiler-rt/lib/builtins/gcc_personality_v0.c 2>/dev/null || true; patch -p1 -N -i \"${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch\""
+    LOG 1
+)
