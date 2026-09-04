@@ -14,6 +14,22 @@ function(cleanup _name _last_step)
         set(git_tag "@{u}")
     endif()
 
+    # postremovebuild wipes the configure output out of the source tree of a
+    # build-in-source package once it is installed, but leaves the stamp files
+    # alone. That is fine while configure, build and install are all stamped: the
+    # package is done and nothing re-runs. It breaks once the build stamp is gone
+    # while the configure stamp survives -- a previous build failed, or the shared
+    # src_packages cache was saved by another arch's job after that job had already
+    # cleaned the tree. The build step then runs make in a tree with no Makefile
+    # ("No targets specified and no makefile found") and stays stuck there forever,
+    # since nothing ever invalidates the configure stamp again. Drop the configure
+    # stamp so configure re-runs and regenerates what build needs.
+    if(_build_in_source AND EXISTS ${stamp_dir}/${_name}-configure
+                        AND NOT EXISTS ${stamp_dir}/${_name}-build)
+        message(STATUS "${_name}: configure stamp without build stamp, forcing reconfigure")
+        file(REMOVE ${stamp_dir}/${_name}-configure)
+    endif()
+
     if(_git_repository)
         if(_build_in_source)
             set(remove_cmd "git -C <SOURCE_DIR> clean -dfx")
