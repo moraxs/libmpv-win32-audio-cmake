@@ -7,7 +7,7 @@ ExternalProject_Add(llvm
     UPDATE_COMMAND ""
     GIT_REMOTE_NAME origin
     GIT_TAG release/20.x
-    PATCH_COMMAND patch -p1 -N -i "${CMAKE_CURRENT_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch"
+    PATCH_COMMAND patch -p1 -N -i "${CMAKE_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch"
     LIST_SEPARATOR ,
     CONFIGURE_COMMAND ${EXEC} CONF=1 PATH=$O_PATH cmake -H<SOURCE_DIR>/llvm -B<BINARY_DIR>
         -G Ninja
