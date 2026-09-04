@@ -15,10 +15,13 @@ ExternalProject_Add(libzimg
         --host=${TARGET_ARCH}
         --prefix=${MINGW_INSTALL_PREFIX}
         --disable-shared
-    # git reset --hard restores graphengine as an empty gitlink directory without
-    # invalidating the configure stamp, so re-link it before make instead of relying
-    # on the configure step having run.
-    BUILD_COMMAND bash -c "rm -rf <SOURCE_DIR>/graphengine && ln -s ${src_graphengine} <SOURCE_DIR>/graphengine"
+    # Neither of these survives to the build step on its own. git reset --hard
+    # restores graphengine as an empty gitlink directory, and it also reverts the
+    # PATCH_COMMAND sed above, because that edit is not a commit the way the git am
+    # patches used elsewhere are. Both happen without invalidating the patch or
+    # configure stamps, so redo them here where make will actually see them. The sed
+    # is idempotent and only matters on ARM, where cpuinfo_arm.cpp is compiled.
+    BUILD_COMMAND bash -c "rm -rf <SOURCE_DIR>/graphengine && ln -s ${src_graphengine} <SOURCE_DIR>/graphengine && sed -i 's/Windows.h/windows.h/g' <SOURCE_DIR>/src/zimg/common/arm/cpuinfo_arm.cpp"
             COMMAND ${MAKE}
     INSTALL_COMMAND ${MAKE} install
             COMMAND bash -c "git -C ${src_graphengine} clean -dfx"
