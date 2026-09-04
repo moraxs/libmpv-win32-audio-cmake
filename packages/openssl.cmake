@@ -11,6 +11,9 @@ ExternalProject_Add(openssl
     UPDATE_COMMAND ""
     CONFIGURE_COMMAND ""
     COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/openssl-arm64.conf <SOURCE_DIR>/Configurations/11-mingw-arm64.conf
+    # configdata.pm unconditionally generates <builddir>/apps/include/configuration.h, but that
+    # directory is only created when apps are enabled, so create it for our no-apps build.
+    COMMAND ${CMAKE_COMMAND} -E make_directory <BINARY_DIR>/apps/include
     COMMAND ${EXEC} CONF=1 <SOURCE_DIR>/Configure
         --cross-compile-prefix=${TARGET_ARCH}-
         --prefix=${MINGW_INSTALL_PREFIX}
