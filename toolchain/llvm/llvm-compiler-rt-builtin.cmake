@@ -28,6 +28,7 @@ ExternalProject_Add(llvm-compiler-rt-builtin
         -DCMAKE_FIND_ROOT_PATH=${MINGW_INSTALL_PREFIX}
         -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY
         -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY
+        -DCMAKE_C_FLAGS='-I${CMAKE_INSTALL_PREFIX}/lib/clang/${clang_version}/include'
         -DSANITIZER_CXX_ABI=libc++
     BUILD_COMMAND ${EXEC} LTO=0 ninja -C <BINARY_DIR>
     INSTALL_COMMAND ${EXEC} LTO=0 ninja -C <BINARY_DIR> install

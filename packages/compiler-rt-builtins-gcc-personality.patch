@@ -30,16 +30,3 @@ index 14673ceae..b1f27ee95 100644
  
  if (NOT FUCHSIA)
    set(GENERIC_SOURCES
-diff --git a/compiler-rt/lib/builtins/gcc_personality_v0.c b/compiler-rt/lib/builtins/gcc_personality_v0.c
-index afb9e2e11..136460448 100644
---- a/compiler-rt/lib/builtins/gcc_personality_v0.c
-+++ b/compiler-rt/lib/builtins/gcc_personality_v0.c
-@@ -9,7 +9,7 @@
- #include "int_lib.h"
- #include <stddef.h>
- 
--#include <unwind.h>
-+#include "../../../libunwind/include/unwind.h"
- #if defined(__arm__) && !defined(__ARM_DWARF_EH__) &&                          \
-     !defined(__USING_SJLJ_EXCEPTIONS__)
- // When building with older compilers (e.g. clang <3.9), it is possible that we
