@@ -5,6 +5,7 @@ ExternalProject_Add(llvm-compiler-rt-builtin
     DOWNLOAD_COMMAND ""
     UPDATE_COMMAND ""
     SOURCE_DIR ${LLVM_SRC}
+    PATCH_COMMAND patch -p1 -N -i "${CMAKE_CURRENT_SOURCE_DIR}/packages/compiler-rt-builtins-gcc-personality.patch"
     LIST_SEPARATOR ,
     CONFIGURE_COMMAND ${EXEC} CONF=1 cmake -H<SOURCE_DIR>/compiler-rt/lib/builtins -B<BINARY_DIR>
         -G Ninja
